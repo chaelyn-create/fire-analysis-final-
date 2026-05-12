@@ -43,12 +43,20 @@ def init_db():
 
     cursor.execute("SELECT count(*) FROM [전기화재 원인]")
     if cursor.fetchone()[0] == 0:
-        causes = ['접촉 불량', '과부하/과전류', '절연열화', '트래킹', '기타']
-        shares = ['35.5', '20.2', '15.8', '10.5', '18.0']
+        # 각 연도별 발화 원인 데이터 (원인, 점유율)
+        data_2022 = [('접촉 불량', '10.4'), ('과부하 및 과전류', '7'), ('절연열화에 의한 단락', '18.5'), 
+                     ('트래킹에 의한 단락', '13.4'), ('기타', '17.6'), ('미확인 단락', '33.2')]
+        data_2023 = [('접촉 불량', '10.2'), ('과부하 및 과전류', '7.9'), ('절연열화에 의한 단락', '18.2'), 
+                     ('트래킹에 의한 단락', '14.7'), ('기타', '15'), ('미확인 단락', '34')]
+        data_2024 = [('접촉 불량', '12.5'), ('과부하 및 과전류', '8.3'), ('절연열화에 의한 단락', '19.5'), 
+                     ('트래킹에 의한 단락', '15'), ('기타', '9.6'), ('미확인 단락', '35.1')]
+        
+        year_data = [('2022', data_2022), ('2023', data_2023), ('2024', data_2024)]
         import random
-        for y in ['2022', '2023', '2024']:
-            for c, s in zip(causes, shares):
-                cursor.execute("INSERT INTO [전기화재 원인] VALUES (?, ?, ?, ?)", (y, c, str(random.randint(100, 500)), s))
+        for y, causes_shares in year_data:
+            for cause, share in causes_shares:
+                cursor.execute("INSERT INTO [전기화재 원인] VALUES (?, ?, ?, ?)", 
+                             (y, cause, str(random.randint(50, 200)), share))
     conn.commit()
     return conn
 

@@ -19,28 +19,36 @@ def init_db():
     cursor.execute("CREATE TABLE IF NOT EXISTS [전기화재 발생수] (연도 TEXT, 행정구역 TEXT, [전기화재 건수] TEXT, PRIMARY KEY(연도, 행정구역))")
     cursor.execute("CREATE TABLE IF NOT EXISTS [전기화재 원인] (연도 TEXT, [발화 원인] TEXT, [전기화재 건수] TEXT, 점유율 TEXT, PRIMARY KEY([전기화재 건수]))")
     
-    # 데이터가 비어있을 경우 샘플 데이터 삽입
-    cursor.execute("SELECT count(*) FROM [월별 전기화재 발생수]")
+    # 월별 샘플 (2022~2024)
+    monthly_samples = {
+        '2022': [835, 695, 705, 610, 595, 758, 895, 953, 666, 625, 595, 870],
+        '2023': [905, 617, 640, 545, 693, 642, 1090, 1011, 609, 546, 715, 858],
+        '2024': [750, 633, 682, 574, 630, 623, 991, 1074, 757, 536, 639, 745],
+    }
+
+    # 기존 DB가 있어도 월별 데이터를 최신 코드 값으로 덮어쓰기
+    cursor.execute("DELETE FROM [월별 전기화재 발생수]")
+    for y, counts in monthly_samples.items():
+        for m, count in enumerate(counts, start=1):
+            cursor.execute("INSERT INTO [월별 전기화재 발생수] VALUES (?, ?)", (f"{y}.{m:02d}.", str(count)))
+
+    # 데이터가 비어있을 경우 행정구역/원인 샘플 데이터 삽입
+    cursor.execute("SELECT count(*) FROM [전기화재 발생수]")
     if cursor.fetchone()[0] == 0:
-        # 월별 샘플 (2022~2024)
-        for y in ['2022', '2023', '2024']:
-            for m in range(1, 13):
-                cursor.execute("INSERT INTO [월별 전기화재 발생수] VALUES (?, ?)", (f"{y}.{m:02d}.", str(100 + (m*5))))
-        
-        # 행정구역 샘플
         regions = ['서울특별시', '경기도', '부산광역시', '인천광역시', '대구광역시', '경상남도', '충청남도']
+        import random
         for y in ['2022', '2023', '2024']:
             for r in regions:
-                import random
                 cursor.execute("INSERT INTO [전기화재 발생수] VALUES (?, ?, ?)", (y, r, str(random.randint(50, 500))))
-        
-        # 원인 샘플
+
+    cursor.execute("SELECT count(*) FROM [전기화재 원인]")
+    if cursor.fetchone()[0] == 0:
         causes = ['접촉 불량', '과부하/과전류', '절연열화', '트래킹', '기타']
         shares = ['35.5', '20.2', '15.8', '10.5', '18.0']
+        import random
         for y in ['2022', '2023', '2024']:
             for c, s in zip(causes, shares):
                 cursor.execute("INSERT INTO [전기화재 원인] VALUES (?, ?, ?, ?)", (y, c, str(random.randint(100, 500)), s))
-                
     conn.commit()
     return conn
 

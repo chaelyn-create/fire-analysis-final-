@@ -14,10 +14,15 @@ def init_db():
     conn = sqlite3.connect('fire_data.db')
     cursor = conn.cursor()
     
+    # 기존 샘플 테이블이 있을 경우 스키마와 데이터를 다시 생성합니다.
+    cursor.execute("DROP TABLE IF EXISTS [월별 전기화재 발생수]")
+    cursor.execute("DROP TABLE IF EXISTS [전기화재 발생수]")
+    cursor.execute("DROP TABLE IF EXISTS [전기화재 원인]")
+    
     # 테이블 생성
-    cursor.execute("CREATE TABLE IF NOT EXISTS [월별 전기화재 발생수] ([연도 및 월] TEXT PRIMARY KEY, [전기화재 건수] TEXT)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS [전기화재 발생수] (연도 TEXT, 행정구역 TEXT, [전기화재 건수] TEXT, PRIMARY KEY(연도, 행정구역))")
-    cursor.execute("CREATE TABLE IF NOT EXISTS [전기화재 원인] (연도 TEXT, [발화 원인] TEXT, [전기화재 건수] TEXT, 점유율 TEXT, PRIMARY KEY([전기화재 건수]))")
+    cursor.execute("CREATE TABLE [월별 전기화재 발생수] ([연도 및 월] TEXT PRIMARY KEY, [전기화재 건수] TEXT)")
+    cursor.execute("CREATE TABLE [전기화재 발생수] (연도 TEXT, 행정구역 TEXT, [전기화재 건수] TEXT, PRIMARY KEY(연도, 행정구역))")
+    cursor.execute("CREATE TABLE [전기화재 원인] (연도 TEXT, [발화 원인] TEXT, [전기화재 건수] TEXT, 점유율 TEXT, PRIMARY KEY(연도, [발화 원인]))")
     
     # 월별 샘플 (2022~2024)
     monthly_samples = {
@@ -41,22 +46,22 @@ def init_db():
             for r in regions:
                 cursor.execute("INSERT INTO [전기화재 발생수] VALUES (?, ?, ?)", (y, r, str(random.randint(50, 500))))
 
-    cursor.execute("SELECT count(*) FROM [전기화재 원인]")
-    if cursor.fetchone()[0] == 0:
-        # 각 연도별 발화 원인 데이터 (원인, 점유율)
-        data_2022 = [('접촉 불량', '10.4'), ('과부하 및 과전류', '7'), ('절연열화에 의한 단락', '18.5'), 
-                     ('트래킹에 의한 단락', '13.4'), ('기타', '17.6'), ('미확인 단락', '33.2')]
-        data_2023 = [('접촉 불량', '10.2'), ('과부하 및 과전류', '7.9'), ('절연열화에 의한 단락', '18.2'), 
-                     ('트래킹에 의한 단락', '14.7'), ('기타', '15'), ('미확인 단락', '34')]
-        data_2024 = [('접촉 불량', '12.5'), ('과부하 및 과전류', '8.3'), ('절연열화에 의한 단락', '19.5'), 
-                     ('트래킹에 의한 단락', '15'), ('기타', '9.6'), ('미확인 단락', '35.1')]
-        
-        year_data = [('2022', data_2022), ('2023', data_2023), ('2024', data_2024)]
-        import random
-        for y, causes_shares in year_data:
-            for cause, share in causes_shares:
-                cursor.execute("INSERT INTO [전기화재 원인] VALUES (?, ?, ?, ?)", 
-                             (y, cause, str(random.randint(50, 200)), share))
+    # 항상 원인 테이블을 초기화하여 최신 점유율 데이터를 유지합니다.
+    cursor.execute("DELETE FROM [전기화재 원인]")
+    # 각 연도별 발화 원인 데이터 (원인, 점유율)
+    data_2022 = [('접촉 불량', '10.4'), ('과부하 및 과전류', '7'), ('절연열화에 의한 단락', '18.5'), 
+                 ('트래킹에 의한 단락', '13.4'), ('기타', '17.6'), ('미확인 단락', '33.2')]
+    data_2023 = [('접촉 불량', '10.2'), ('과부하 및 과전류', '7.9'), ('절연열화에 의한 단락', '18.2'), 
+                 ('트래킹에 의한 단락', '14.7'), ('기타', '15'), ('미확인 단락', '34')]
+    data_2024 = [('접촉 불량', '12.5'), ('과부하 및 과전류', '8.3'), ('절연열화에 의한 단락', '19.5'), 
+                 ('트래킹에 의한 단락', '15'), ('기타', '9.6'), ('미확인 단락', '35.1')]
+    
+    year_data = [('2022', data_2022), ('2023', data_2023), ('2024', data_2024)]
+    import random
+    for y, causes_shares in year_data:
+        for cause, share in causes_shares:
+            cursor.execute("INSERT INTO [전기화재 원인] VALUES (?, ?, ?, ?)", 
+                         (y, cause, str(random.randint(50, 200)), share))
     conn.commit()
     return conn
 
